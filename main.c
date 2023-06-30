@@ -380,17 +380,17 @@ int find(heap *heap_p, char *input, char **tokens)
         size_t length = strlen(new_surname);
         new_surname[length] = '\n';
         new_surname[length + 1] = '\0';
-        tokens[surname_idx] = new_surname;
-
+        strcpy(tokens[surname_idx], new_surname);
         if (ret_code == ONLY_NAME) {
             for (size_t i = 0; i < heap_p->last_idx; i++) {
                 for (size_t j = 0; j <= heap_p->birthdays[i].persons_arr->last_idx; j++) {
                     person p = heap_p->birthdays[i].persons_arr->person_arr[j];
                     if (strcmp(p.name, tokens[0]) == 0 && strcmp(p.surname, tokens[1]) == 0) {
-                        return i;
+                        printf("%u. %u. has Birthday -> %s %s", heap_p->birthdays[i].day, heap_p->birthdays[i].month, p.name, p.surname);
                     }
                 }
             }
+            return -2;
         }
     }
 
@@ -448,24 +448,26 @@ void heapify(heap *heap_p, uint8_t idx, int curr_day, int cur_month)
 
 void delete (heap *heap_p, uint8_t day_idx, char **tokens)
 {
-    day day_p = heap_p->birthdays[day_idx];
+    day *day_p = &heap_p->birthdays[day_idx];
     uint8_t person_idx = 0;
 
-    for (size_t j = 0; j < day_p.persons_arr->last_idx; j++) {
-        person p = day_p.persons_arr->person_arr[j];
-        if (strcmp(p.name, tokens[2]) == 0 && strcmp(p.surname, tokens[3]) == 0) {
-            person_idx = j;
+    if (day_p->persons_arr->last_idx > 0) {
+        for (size_t j = 0; j <= day_p->persons_arr->last_idx; j++) {
+            person *p = &day_p->persons_arr->person_arr[j];
+            if (strcmp(p->name, tokens[2]) == 0 && strcmp(p->surname, tokens[3]) == 0) {
+                person_idx = j;
+            }
         }
     }
 
-    if (day_p.persons_arr->last_idx > 0) {
-        uint8_t last = day_p.persons_arr->last_idx;
-        person temp = day_p.persons_arr->person_arr[person_idx];
-        day_p.persons_arr->person_arr[person_idx] = day_p.persons_arr->person_arr[last];
-        day_p.persons_arr->person_arr[last] = temp;
-        free(day_p.persons_arr->person_arr[last].name);
-        free(day_p.persons_arr->person_arr[last].surname);
-        day_p.persons_arr->last_idx--;
+    if (day_p->persons_arr->last_idx > 0) {
+        uint8_t last = day_p->persons_arr->last_idx;
+        person temp = day_p->persons_arr->person_arr[person_idx];
+        day_p->persons_arr->person_arr[person_idx] = day_p->persons_arr->person_arr[last];
+        day_p->persons_arr->person_arr[last] = temp;
+        free(day_p->persons_arr->person_arr[last].name);
+        free(day_p->persons_arr->person_arr[last].surname);
+        day_p->persons_arr->last_idx--;
         return;
     }
 
@@ -527,14 +529,34 @@ int main(int argc, char **args)
         delete (heap_p, day_idx, tokens);
     }
 
-    uint8_t month;
-    uint8_t day;
+    if ((argc == 3 || argc == 2) && strcmp(args[1], "-l") == 0) {
+        if (argc == 2) {
+            uint8_t month;
+            uint8_t day;
 
-    for (size_t i = 0; i < heap_p->last_idx; i++) {
-        month = heap_p->birthdays[i].month;
-        day = heap_p->birthdays[i].day;
-        for (size_t j = 0; j <= heap_p->birthdays[i].persons_arr->last_idx; j++) {
-            printf("%u|%u|%s|%s", day, month, heap_p->birthdays[i].persons_arr->person_arr[j].name, heap_p->birthdays[i].persons_arr->person_arr[j].surname);
+            for (size_t i = 0; i < heap_p->last_idx; i++) {
+                month = heap_p->birthdays[i].month;
+                day = heap_p->birthdays[i].day;
+                for (size_t j = 0; j <= heap_p->birthdays[i].persons_arr->last_idx; j++) {
+                    printf("%u. %u. has Birthday -> %s %s", day, month, heap_p->birthdays[i].persons_arr->person_arr[j].name, heap_p->birthdays[i].persons_arr->person_arr[j].surname);
+                }
+            }
+
+        } else {
+            char *tokens[MAX_TOKENS];
+            int day_idx = find(heap_p, args[2], tokens);
+            if (day_idx == -1) {
+                fprintf(stderr, "Birthday does not found\n");
+                destroy(heap_p);
+                return EXIT_FAILURE;
+            }
+            if (day_idx >= 0) {
+                uint8_t month = heap_p->birthdays[day_idx].month;
+                uint8_t day = heap_p->birthdays[day_idx].day;
+                for (size_t j = 0; j <= heap_p->birthdays[day_idx].persons_arr->last_idx; j++) {
+                    printf("%u. %u. has Birthday -> %s %s", day, month, heap_p->birthdays[day_idx].persons_arr->person_arr[j].name, heap_p->birthdays[day_idx].persons_arr->person_arr[j].surname);
+                }
+            }
         }
     }
 
