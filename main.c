@@ -73,7 +73,7 @@ bool file_exists(const char *file)
     return false;
 }
 
-bool add_day(heap *heap_p, char **tokens)
+int add_day(heap *heap_p, char **tokens)
 {
     day new_day = { UINT8_MAX, UINT8_MAX, NULL };
 
@@ -81,25 +81,25 @@ bool add_day(heap *heap_p, char **tokens)
     uint8_t day_i = strtol(tokens[0], &end, 10);
     if (end == tokens[0]) {
         perror("strtol");
-        return false;
+        return -1;
     }
     new_day.day = day_i;
     uint8_t month = strtol(tokens[1], &end, 10);
     if (end == tokens[1]) {
         perror("strtol");
-        return false;
+        return -1;
     }
     new_day.month = month;
     person new_person = { NULL, NULL };
     new_person.name = strdup(tokens[2]);
     if (new_person.name == NULL) {
         perror("strdup");
-        return false;
+        return -1;
     }
     new_person.surname = strdup(tokens[3]);
     if (new_person.surname == NULL) {
         perror("strdup");
-        return false;
+        return -1;
     }
 
     if (heap_p->last_idx == 0 || (heap_p->birthdays[heap_p->last_idx - 1].day != day_i || heap_p->birthdays[heap_p->last_idx - 1].month != month)) {
@@ -107,16 +107,17 @@ bool add_day(heap *heap_p, char **tokens)
         new_persons.person_arr = (person *) malloc(new_persons.capacity * sizeof(person));
         if (new_persons.person_arr == NULL) {
             perror("alloc fail");
-            return false;
+            return -1;
         }
         new_persons.person_arr[0] = new_person;
         new_day.persons_arr = (persons *) malloc(sizeof(persons));
         if (new_day.persons_arr == NULL) {
             perror("alloc fail");
-            return false;
+            return -1;
         }
         new_day.persons_arr[0] = new_persons;
         heap_p->birthdays[heap_p->last_idx] = new_day;
+        return 1;
     } else {
         if (heap_p->birthdays[heap_p->last_idx - 1].persons_arr->last_idx + 1 >= heap_p->birthdays[heap_p->last_idx - 1].persons_arr->capacity) {
             heap_p->birthdays[heap_p->last_idx - 1].persons_arr->capacity *= 2;
@@ -124,16 +125,15 @@ bool add_day(heap *heap_p, char **tokens)
             new = (person *) realloc(heap_p->birthdays[heap_p->last_idx - 1].persons_arr->person_arr, heap_p->birthdays[heap_p->last_idx - 1].persons_arr->capacity * sizeof(person));
             if (new == NULL) {
                 perror("realloc fail");
-                return false;
+                return -1;
             }
             heap_p->birthdays[heap_p->last_idx - 1].persons_arr->person_arr = new;
         }
-        heap_p->last_idx--;
-        heap_p->birthdays[heap_p->last_idx].persons_arr->last_idx++;
-        uint8_t idx = heap_p->birthdays[heap_p->last_idx].persons_arr->last_idx;
-        heap_p->birthdays[heap_p->last_idx].persons_arr->person_arr[idx] = new_person;
+        heap_p->birthdays[heap_p->last_idx - 1].persons_arr->last_idx++;
+        uint8_t idx = heap_p->birthdays[heap_p->last_idx - 1].persons_arr->last_idx;
+        heap_p->birthdays[heap_p->last_idx - 1].persons_arr->person_arr[idx] = new_person;
+        return 2;
     }
-    return true;
 }
 
 uint8_t parse(char **tokens, char *input)
@@ -180,13 +180,14 @@ bool load_file(FILE *file, heap *heap_p)
             }
             heap_p->birthdays = new;
         }
-
-        if (!add_day(heap_p, tokens)) {
+        int ret_code_a = 0;
+        if ((ret_code_a = add_day(heap_p, tokens)) == -1) {
             free(line);
             return false;
         }
-
-        heap_p->last_idx += 1;
+        if (ret_code_a == 1) {
+            heap_p->last_idx += 1;
+        }
     }
     free(line);
 
@@ -267,22 +268,71 @@ bool save_changes(heap *heap_p)
     return true;
 }
 
+int find(heap *heap_p, char *input, char **tokens)
+{
+    int ret_code = parse(tokens, input);
+    if (ret_code == ONLY_NAME || ret_code == MAX_TOKENS) {
+        int surname_idx = (ret_code == MAX_TOKENS) ? 3 : 1;
+        char new_surname[strlen(tokens[surname_idx]) + 2];
+        strcpy(new_surname, tokens[surname_idx]);
+        size_t length = strlen(new_surname);
+        new_surname[length] = '\n';
+        new_surname[length + 1] = '\0';
+        strcpy(tokens[surname_idx], new_surname);
+        if (ret_code == ONLY_NAME) {
+            for (size_t i = 0; i < heap_p->last_idx; i++) {
+                for (size_t j = 0; j <= heap_p->birthdays[i].persons_arr->last_idx; j++) {
+                    person p = heap_p->birthdays[i].persons_arr->person_arr[j];
+                    if (strcmp(p.name, tokens[0]) == 0 && strcmp(p.surname, tokens[1]) == 0) {
+                        printf("%u. %u. has Birthday -> %s %s", heap_p->birthdays[i].day, heap_p->birthdays[i].month, p.name, p.surname);
+                    }
+                }
+            }
+            return -2;
+        }
+    }
+
+    if (ret_code == ONLY_DATE || ret_code == MAX_TOKENS) {
+        char *end;
+        uint8_t day_i = strtol(tokens[0], &end, 10);
+        if (end == tokens[0]) {
+            destroy(heap_p);
+            perror("strtol");
+            return -1;
+        }
+
+        uint8_t month = strtol(tokens[1], &end, 10);
+        if (end == tokens[1]) {
+            destroy(heap_p);
+            perror("strtol");
+            return -1;
+        }
+
+        for (size_t i = 0; i < heap_p->last_idx; i++) {
+            if (heap_p->birthdays[i].day == day_i && heap_p->birthdays[i].month == month) {
+                return i;
+            }
+        }
+    }
+
+    return -1;
+}
+
 bool create_day(heap *heap_p, char *input)
 {
     char *tokens[MAX_TOKENS];
-    int ret_code = parse(tokens, input);
-    if (ret_code != MAX_TOKENS) {
-        destroy(heap_p);
-        fprintf(stderr, "Invalid day\n");
-        return false;
+    int idx = find(heap_p, input, tokens);
+    if (idx != -1) {
+        uint8_t temp = heap_p->last_idx;
+        heap_p->last_idx = idx + 1;
+        if (add_day(heap_p, tokens) == -1) {
+            destroy(heap_p);
+            return false;
+        }
+        heap_p->last_idx = temp;
+        return true;
     }
 
-    char new_surname[strlen(tokens[3]) + 2];
-    strcpy(new_surname, tokens[3]);
-    size_t length = strlen(new_surname);
-    new_surname[length] = '\n';
-    new_surname[length + 1] = '\0';
-    tokens[3] = new_surname;
     char *end;
     uint8_t day_i = strtol(tokens[0], &end, 10);
     if (end == tokens[0]) {
@@ -306,10 +356,12 @@ bool create_day(heap *heap_p, char *input)
         fprintf(stderr, "Invalid day\n");
         return false;
     }
-    if (!add_day(heap_p, tokens)) {
+
+    if (add_day(heap_p, tokens) == -1) {
         destroy(heap_p);
         return false;
     }
+    heap_p->last_idx++;
     return true;
 }
 
@@ -359,7 +411,6 @@ void decrease_key(heap *heap_p, const int cur_month, const int cur_day)
     }
 
     day *parent = &heap_p->birthdays[parent_idx(idx)];
-
     while (parent_idx(idx) != UINT8_MAX && cmp(last, parent, cur_month, cur_day) == -1) {
         swap(heap_p, idx, parent_idx(idx));
         idx = parent_idx(idx);
@@ -369,56 +420,6 @@ void decrease_key(heap *heap_p, const int cur_month, const int cur_day)
         }
         parent = &heap_p->birthdays[parent_idx(idx)];
     }
-}
-
-int find(heap *heap_p, char *input, char **tokens)
-{
-    int ret_code = parse(tokens, input);
-    if (ret_code == ONLY_NAME || ret_code == MAX_TOKENS) {
-        int surname_idx = (ret_code == MAX_TOKENS) ? 3 : 1;
-        char new_surname[strlen(tokens[surname_idx]) + 2];
-        strcpy(new_surname, tokens[surname_idx]);
-        size_t length = strlen(new_surname);
-        new_surname[length] = '\n';
-        new_surname[length + 1] = '\0';
-        strcpy(tokens[surname_idx], new_surname);
-        if (ret_code == ONLY_NAME) {
-            for (size_t i = 0; i < heap_p->last_idx; i++) {
-                for (size_t j = 0; j <= heap_p->birthdays[i].persons_arr->last_idx; j++) {
-                    person p = heap_p->birthdays[i].persons_arr->person_arr[j];
-                    if (strcmp(p.name, tokens[0]) == 0 && strcmp(p.surname, tokens[1]) == 0) {
-                        printf("%u. %u. has Birthday -> %s %s", heap_p->birthdays[i].day, heap_p->birthdays[i].month, p.name, p.surname);
-                    }
-                }
-            }
-            return -2;
-        }
-    }
-
-    if (ret_code == ONLY_DATE || ret_code == MAX_TOKENS) {
-        char *end;
-        uint8_t day_i = strtol(tokens[0], &end, 10);
-        if (end == tokens[0]) {
-            destroy(heap_p);
-            perror("strtol");
-            return -1;
-        }
-
-        uint8_t month = strtol(tokens[1], &end, 10);
-        if (end == tokens[1]) {
-            destroy(heap_p);
-            perror("strtol");
-            return -1;
-        }
-
-        for (size_t i = 0; i < heap_p->last_idx; i++) {
-            if (heap_p->birthdays[i].day == day_i && heap_p->birthdays[i].month == month) {
-                return i;
-            }
-        }
-    }
-
-    return -1;
 }
 
 void heapify(heap *heap_p, uint8_t idx, int curr_day, int cur_month)
@@ -510,13 +511,12 @@ int main(int argc, char **args)
         if (!create_day(heap_p, args[2])) {
             return EXIT_FAILURE;
         }
-        heap_p->last_idx++;
 
         time_t currentTime = time(NULL);
         struct tm *localTime = localtime(&currentTime);
-        const int month = localTime->tm_mon + 1;
-        const int day = localTime->tm_mday;
-        decrease_key(heap_p, month, day);
+        const int month_i = localTime->tm_mon + 1;
+        const int day_i = localTime->tm_mday;
+        decrease_key(heap_p, month_i, day_i);
     }
 
     if (argc == 3 && strcmp(args[1], "-d") == 0) {
