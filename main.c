@@ -1,4 +1,5 @@
 #include <ctype.h>
+#include <libnotify/notify.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -558,6 +559,65 @@ int main(int argc, char **args)
                 }
             }
         }
+    }
+
+    if (argc == 2 && strcmp(args[1], "-s") == 0) {
+        time_t currentTime = time(NULL);
+        struct tm *localTime = localtime(&currentTime);
+        const int month = localTime->tm_mon + 1;
+        const int day = localTime->tm_mday;
+        heapify(heap_p, 0, day, month);
+
+        uint8_t b_day = heap_p->birthdays[0].day;
+        uint8_t b_month = heap_p->birthdays[0].month;
+
+        if (b_day != day || b_month != month) {
+            notify_uninit();
+            if (!save_changes(heap_p)) {
+                return EXIT_FAILURE;
+            }
+            destroy(heap_p);
+            return EXIT_SUCCESS;
+        }
+
+        int cap = 30;
+        char *message = malloc(cap * sizeof(char));
+        if (message == NULL) {
+            notify_uninit();
+            destroy(heap_p);
+            return EXIT_FAILURE;
+        }
+
+        strcpy(message, "Today -> ");
+        for (uint8_t i = 0; i <= heap_p->birthdays[0].persons_arr->last_idx; i++) {
+            size_t name_len = strlen(heap_p->birthdays[0].persons_arr->person_arr[i].name);
+            size_t surname_len = strlen(heap_p->birthdays[0].persons_arr->person_arr[i].surname);
+
+            char *temp = realloc(message, strlen(message) + name_len + surname_len + 2);
+            if (temp == NULL) {
+                fprintf(stderr, "Failed to allocate memory\n");
+                free(message);
+                return EXIT_FAILURE;
+            }
+            message = temp;
+
+            strcat(message, heap_p->birthdays[0].persons_arr->person_arr[i].name);
+            strcat(message, " ");
+            strcat(message, heap_p->birthdays[0].persons_arr->person_arr[i].surname);
+        }
+
+        if (!notify_init("Notification Example")) {
+            fprintf(stderr, "Failed to initialize libnotify\n");
+            destroy(heap_p);
+            return EXIT_FAILURE;
+        }
+
+        NotifyNotification *notification = notify_notification_new("BirthDay Reminder", message, NULL);
+        notify_notification_show(notification, NULL);
+
+        g_object_unref(G_OBJECT(notification));
+        notify_uninit();
+        free(message);
     }
 
     if (!save_changes(heap_p)) {
