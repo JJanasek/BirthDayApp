@@ -1,63 +1,50 @@
 # BirthDayApp
 
 Works only on Ubuntu-like OS.
+
 Save your friends' birthdays and be reminded of them with notifications.
 
-Provide
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
 
 ## Features
 
-This app has following features: inserting/deleting new birthday, listing specific or all saved birthday and notifies the soones birthday.
+This app has the following features: inserting/deleting new birthdays, listing specific or all saved birthdays, and notifying upcoming birthdays.
 
 ## Installation
-Firstly you need to install this libnotify and cmake: 
-'''
-sudo apt install libnotify-dev
-sudo apt install cmake
-'''
-change directory to downloded repo and run:
 
-'''
-cmake -S . -Bbuild
-cd build && make
-'''
+First, you need to install the required dependencies: `libnotify-dev` and `cmake`. Open a terminal and run the following commands:
 
-then run:
-'''
-crontab -e
-'''
-and insert this line:
-'''
-0 8 * * * export DISPLAY=:0 && export XDG_RUNTIME_DIR=/run/user/$(id -u) && cd /path/to/your/program/buid/ && ./BirthDay -s >> ./log.txt 2>&1
+    sudo apt install libnotify-dev
+    sudo apt install cmake
 
-'''
-where "/path/to/your/program/" change to directory where directory with build.
+Next, navigate to the downloaded repository and build the project using CMake:
+
+    cmake -S . -B build
+    cd build && make
+
+To schedule the notifications, open the crontab editor:
+
+    crontab -e
+
+Insert the following line in the crontab file, replacing `/path/to/your/program/build/` with the actual path to your program's build directory:
+
+    0 8 * * * export DISPLAY=:0 && export XDG_RUNTIME_DIR=/run/user/$(id -u) && cd /path/to/your/program/build/ && ./BirthDay -s >> ./log.txt 2>&1
 
 ## Usage
 
-to insert birthday use:
+To insert a birthday, use the following command:
 
-'''
-./BirthDay -i "DAY|MONTH|NAME|SURNAME"
-'''
+    ./BirthDay -i "DAY|MONTH|NAME|SURNAME"
 
-to delete birthday use:
+To delete a birthday, use the following command:
 
-'''
-./BirthDay -d "DAY|MONTH|NAME|SURNAME"
-'''
+    ./BirthDay -d "DAY|MONTH|NAME|SURNAME"
 
-to bring notification use:
+To trigger the notification, use the following command:
 
-'''
-
-./BirthDay -s
-
-'''
-
+    ./BirthDay -s
 
 ---
 
