@@ -48,6 +48,4 @@ To trigger the notification, use the following command:
 
 ---
 
-Feel free to modify this template to fit the specifics of your project. Make sure to provide clear and concise information so that users can quickly understand and use your project.
-
 Happy coding! If you need any further assistance, feel free to ask.
