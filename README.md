@@ -30,7 +30,7 @@ To schedule the notifications, open the crontab editor:
 
 Insert the following line in the crontab file, replacing `/path/to/your/program/build/` with the actual path to your program's build directory:
 
-    0 8 * * * export DISPLAY=:0 && export XDG_RUNTIME_DIR=/run/user/$(id -u) && cd /path/to/your/program/build/ && ./BirthDay -s >> ./log.txt 2>&1
+    0 */8 * * * export DISPLAY=:0 && export XDG_RUNTIME_DIR=/run/user/$(id -u) && cd /path/to/your/program/build/ && ./BirthDay -s >> ./log.txt 2>&1
 
 ## Usage
 
