@@ -566,7 +566,9 @@ int main(int argc, char **args)
         struct tm *localTime = localtime(&currentTime);
         const int month = localTime->tm_mon + 1;
         const int day = localTime->tm_mday;
-        heapify(heap_p, 0, day, month);
+        for (int i = (heap_p->last_idx / 2) + 1; i >= 0; --i){
+		heapify(heap_p, i, day, month);
+	}
 
         uint8_t b_day = heap_p->birthdays[0].day;
         uint8_t b_month = heap_p->birthdays[0].month;
