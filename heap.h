@@ -20,5 +20,6 @@ void heapify(heap *heap_p, uint8_t idx, int curr_day, int cur_month);
 void delete (heap *heap_p, uint8_t day_idx, char **tokens);
 int find(heap *heap_p, char *input, char **tokens);
 heap *heap_init(heap *heap_p);
+void clear_heap(heap *heap_p);
 
 #endif

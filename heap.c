@@ -73,6 +73,17 @@ int add_day(heap *heap_p, char **tokens)
         heap_p->birthdays[heap_p->last_idx] = new_day;
         return 1;
     } else {
+        // Check for duplicates
+        persons *current_persons = heap_p->birthdays[heap_p->last_idx - 1].persons_arr;
+        for (size_t i = 0; i <= current_persons->last_idx; i++) {
+            if (strcmp(current_persons->person_arr[i].name, new_person.name) == 0 &&
+                strcmp(current_persons->person_arr[i].surname, new_person.surname) == 0) {
+                free(new_person.name);
+                free(new_person.surname);
+                return -3; // Duplicate code
+            }
+        }
+
         if (heap_p->birthdays[heap_p->last_idx - 1].persons_arr->last_idx + 1 >= heap_p->birthdays[heap_p->last_idx - 1].persons_arr->capacity) {
             heap_p->birthdays[heap_p->last_idx - 1].persons_arr->capacity *= 2;
             person *new = NULL;
@@ -88,6 +99,14 @@ int add_day(heap *heap_p, char **tokens)
         heap_p->birthdays[heap_p->last_idx - 1].persons_arr->person_arr[idx] = new_person;
         return 2;
     }
+}
+
+void clear_heap(heap *heap_p)
+{
+    destroy(heap_p);
+    heap_p->last_idx = 0;
+    heap_p->capacity = 16;
+    heap_p->birthdays = malloc(heap_p->capacity * sizeof(day));
 }
 
 int find(heap *heap_p, char *input, char **tokens)
@@ -147,8 +166,14 @@ bool create_day(heap *heap_p, char *input)
     if (idx != -1) {
         uint8_t temp = heap_p->last_idx;
         heap_p->last_idx = idx + 1;
-        if (add_day(heap_p, tokens) == -1) {
+        int res = add_day(heap_p, tokens);
+        if (res == -1) {
             destroy(heap_p);
+            return false;
+        }
+        if (res == -3) {
+            fprintf(stderr, "Person already exists.\n");
+            heap_p->last_idx = temp;
             return false;
         }
         heap_p->last_idx = temp;

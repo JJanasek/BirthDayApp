@@ -15,7 +15,7 @@ int main(int argc, char **args)
     }
 
     if (argc == 2 && strcmp(args[1], "-h") == 0) {
-        printf("-h for help\n-i 'DD|MM|NAME|SURNAME' for adding new person\n-d 'DD|MM|NAME|SURNAME' to delete birthday\n-l ['DATE OF BIRTH'] or ['NAME SURNAME'] to list birth day\n-s to print soonest birthday\n");
+        printf("-h for help\n-i 'DD|MM|NAME|SURNAME' for adding new person\n-d 'DD|MM|NAME|SURNAME' to delete birthday\n-l ['DATE OF BIRTH'] or ['NAME SURNAME'] to list birth day\n-s to print soonest birthday\n-f 'FILENAME' to import birthdays from text file\n--delete-all to remove all birthdays\n");
         return EXIT_SUCCESS;
     }
 
@@ -37,6 +37,19 @@ int main(int argc, char **args)
         const int month_i = localTime->tm_mon + 1;
         const int day_i = localTime->tm_mday;
         decrease_key(heap_p, month_i, day_i);
+    }
+
+    if (argc == 3 && strcmp(args[1], "-f") == 0) {
+        if (!import_text_file(args[2], heap_p)) {
+            fprintf(stderr, "Failed to import file: %s\n", args[2]);
+            return EXIT_FAILURE;
+        }
+        printf("Import successful.\n");
+    }
+
+    if (argc == 2 && strcmp(args[1], "--delete-all") == 0) {
+        clear_heap(heap_p);
+        printf("All birthdays deleted.\n");
     }
 
     if (argc == 3 && strcmp(args[1], "-d") == 0) {

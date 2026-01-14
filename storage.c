@@ -1,4 +1,5 @@
 #include "storage.h"
+#include "utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -135,5 +136,50 @@ bool save_changes(heap *heap_p)
         return false;
     }
     free(path);
+    return true;
+}
+
+bool import_text_file(const char *filename, heap *heap_p)
+{
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("import file");
+        return false;
+    }
+
+    char *line = NULL;
+    size_t bufsize = 0;
+    ssize_t characters_read;
+
+    while ((characters_read = getline(&line, &bufsize, file)) != -1) {
+        char *tokens[MAX_TOKENS];
+        int ret_code = parse(tokens, line);
+        if (ret_code != MAX_TOKENS) {
+            fprintf(stderr, "Skipping invalid line: %s", line);
+            continue;
+        }
+
+        if (heap_p->last_idx + 1 >= heap_p->capacity) {
+            heap_p->capacity *= 2;
+            day *new = NULL;
+            new = (day *) realloc(heap_p->birthdays, heap_p->capacity * sizeof(day));
+            if (new == NULL) {
+                perror("realloc");
+                free(line);
+                fclose(file);
+                return false;
+            }
+            heap_p->birthdays = new;
+        }
+        
+        int ret_code_a = 0;
+        if ((ret_code_a = add_day(heap_p, tokens)) == -1) {
+            fprintf(stderr, "Failed to add day from line: %s", line);
+        } else if (ret_code_a == 1) {
+            heap_p->last_idx += 1;
+        }
+    }
+    free(line);
+    fclose(file);
     return true;
 }

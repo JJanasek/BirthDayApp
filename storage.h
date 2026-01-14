@@ -9,5 +9,6 @@ char *get_data_file_path();
 void ensure_directory_exists(const char *path);
 bool load_binary(FILE *file, heap *heap_p);
 bool save_changes(heap *heap_p);
+bool import_text_file(const char *filename, heap *heap_p);
 
 #endif
