@@ -1,51 +1,91 @@
 # BirthDayApp
 
-Works only on Ubuntu-like OS.
-
 Save your friends' birthdays and be reminded of them with notifications.
-
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
 
 ## Features
 
-This app has the following features: inserting/deleting new birthdays, listing specific or all saved birthdays, and notifying upcoming birthdays.
+- **Store Birthdays**: Efficiently store birthdays in a binary format.
+- **Reminders**: Get desktop notifications for birthdays.
+- **CLI Interface**: Simple command-line interface to add, delete, and list birthdays.
+- **Automated**: Daily cron job checks for birthdays at 10:00 AM and 6:00 PM.
 
 ## Installation
 
-First, you need to install the required dependencies: `libnotify-dev` and `cmake`. Open a terminal and run the following commands:
+### Dependencies
 
-    sudo apt install libnotify-dev
-    sudo apt install cmake
+**Arch Linux:**
+```bash
+sudo pacman -S libnotify cmake make gcc
+```
 
-Next, navigate to the downloaded repository and build the project using CMake:
+**Ubuntu/Debian:**
+```bash
+sudo apt install libnotify-dev cmake make gcc
+```
 
-    cmake -S . -B build
-    cd build && make
+### Install Script
 
-To schedule the notifications, open the crontab editor:
+The easiest way to install is using the provided script. This will build the application, install it to `~/.local/bin`, and set up the cron job.
 
-    crontab -e
+```bash
+./install.sh
+```
 
-Insert the following line in the crontab file, replacing `/path/to/your/program/build/` with the actual path to your program's build directory:
+### Manual Build
 
-    0 */8 * * * export DISPLAY=:0 && export XDG_RUNTIME_DIR=/run/user/$(id -u) && cd /path/to/your/program/build/ && ./BirthDay -s >> ./log.txt 2>&1
+If you prefer to build manually:
+
+```bash
+mkdir -p build
+cd build
+cmake ..
+make
+```
 
 ## Usage
 
-To insert a birthday, use the following command:
+The application stores data in `$XDG_DATA_HOME/BirthDayApp/birthdays.dat` (usually `~/.local/share/BirthDayApp/birthdays.dat`).
 
-    ./BirthDay -i "DAY|MONTH|NAME|SURNAME"
+### Add a Birthday
+```bash
+BirthDay -i "DD|MM|NAME|SURNAME"
+```
+Example:
+```bash
+BirthDay -i "15|01|John|Doe"
+```
 
-To delete a birthday, use the following command:
+### Delete a Birthday
+```bash
+BirthDay -d "DD|MM|NAME|SURNAME"
+```
 
-    ./BirthDay -d "DAY|MONTH|NAME|SURNAME"
+### List Birthdays
+List all birthdays:
+```bash
+BirthDay -l
+```
+List specific birthday:
+```bash
+BirthDay -l "DD|MM|NAME|SURNAME"
+```
 
-To trigger the notification, use the following command:
+### Check for Birthdays (Notification)
+This is usually run by the cron job, but you can run it manually:
+```bash
+BirthDay -s
+```
 
-    ./BirthDay -s
+## Project Structure
+
+The project is modularized into:
+- `main.c`: Entry point and CLI handling.
+- `person.c/h`: Person data structure.
+- `day.c/h`: Day data structure.
+- `heap.c/h`: Min-heap implementation for efficient retrieval.
+- `storage.c/h`: Binary storage logic.
+- `utils.c/h`: Helper functions.
 
 ---
 
-Happy coding! If you need any further assistance, feel free to ask.
+Happy coding!
